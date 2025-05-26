@@ -1,0 +1,15 @@
+C:\Users\gutcr\Compilador\bin\Debug\net9.0\Compilador.exe
+C:\Users\gutcr\Compilador\bin\Debug\net9.0\Compilador.deps.json
+C:\Users\gutcr\Compilador\bin\Debug\net9.0\Compilador.runtimeconfig.json
+C:\Users\gutcr\Compilador\bin\Debug\net9.0\Compilador.dll
+C:\Users\gutcr\Compilador\bin\Debug\net9.0\Compilador.pdb
+C:\Users\gutcr\Compilador\obj\Debug\net9.0\Compilador.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\gutcr\Compilador\obj\Debug\net9.0\Compilador.AssemblyInfoInputs.cache
+C:\Users\gutcr\Compilador\obj\Debug\net9.0\Compilador.AssemblyInfo.cs
+C:\Users\gutcr\Compilador\obj\Debug\net9.0\Compilador.csproj.CoreCompileInputs.cache
+C:\Users\gutcr\Compilador\obj\Debug\net9.0\Compilador.sourcelink.json
+C:\Users\gutcr\Compilador\obj\Debug\net9.0\Compilador.dll
+C:\Users\gutcr\Compilador\obj\Debug\net9.0\refint\Compilador.dll
+C:\Users\gutcr\Compilador\obj\Debug\net9.0\Compilador.pdb
+C:\Users\gutcr\Compilador\obj\Debug\net9.0\Compilador.genruntimeconfig.cache
+C:\Users\gutcr\Compilador\obj\Debug\net9.0\ref\Compilador.dll
