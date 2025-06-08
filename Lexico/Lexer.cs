@@ -31,6 +31,9 @@ public class Lexer
 
         if (char.IsLetter(current) || current == '_')
             return ReadIdentifier();
+        
+        if (current == '\'')
+            return ReadChar();
 
         if (current == '"')
             return ReadString();
@@ -59,16 +62,23 @@ public class Lexer
     {
         int startColumn = _column;
         int start = _position;
+        bool hasDot = false;
 
-        while (_position < _input.Length && char.IsDigit(Peek()))
+        while (_position < _input.Length &&
+            (char.IsDigit(Peek()) || (Peek() == '.' && !hasDot)))
         {
+            if (Peek() == '.')
+                hasDot = true;
+
             _position++;
             _column++;
         }
 
         string value = _input.Substring(start, _position - start);
-        return new Token(TokenType.Number, value, _line, startColumn);
-    }
+        TokenType type = hasDot ? TokenType.Float : TokenType.Number;
+
+        return new Token(type, value, _line, startColumn);
+}
 
     private Token ReadIdentifier()
     {
@@ -89,6 +99,9 @@ public class Lexer
             "while" => TokenType.While,
             "for" => TokenType.For,
             "return" => TokenType.Return,
+            "var" => TokenType.Var,
+            "true" => TokenType.Boolean,
+            "false" => TokenType.Boolean,
             _ => TokenType.Identifier
         };
 
@@ -126,6 +139,24 @@ public class Lexer
 
         return new Token(TokenType.String, value, _line, startColumn);
     }
+    
+    private Token ReadChar()
+    {
+        int startColumn = _column;
+        _position++; _column++;
+        if (_position >= _input.Length || Peek() == '\n')
+            return new Token(TokenType.Invalid, "Caractere mal formado", _line, startColumn);
+
+        char valueChar = Peek();
+        _position++; _column++;
+
+        if (_position >= _input.Length || Peek() != '\'')
+            return new Token(TokenType.Invalid, "Char mal formado", _line, startColumn);
+
+        _position++; _column++;
+
+        return new Token(TokenType.Char, valueChar.ToString(), _line, startColumn);
+    }
 
     private Token ReadSymbolOrOperator()
     {
@@ -153,6 +184,8 @@ public class Lexer
             ('}', _) => new Token(TokenType.RightBrace, "}", _line, startColumn),
             (',', _) => new Token(TokenType.Comma, ",", _line, startColumn),
             (';', _) => new Token(TokenType.Semicolon, ";", _line, startColumn),
+            (':', _) => new Token(TokenType.Colon, ":", _line, startColumn),
+
             _ => new Token(TokenType.Invalid, current.ToString(), _line, startColumn),
         };
     }

@@ -12,7 +12,11 @@ namespace Compilador.Lexico
         // Identificadores e literais
         Identifier,     // [a-zA-Z_][a-zA-Z0-9_]*
         Number,         // [0-9]+
+        Float,       // [0-9]+\.[0-9]+
+        Char,       // 'c'
+        Boolean,       // true | false
         String,         // ".*?"
+        Var,           // var
 
         // Operadores aritméticos e relacionais
         Plus,           // +
@@ -34,6 +38,7 @@ namespace Compilador.Lexico
         RightBrace,     // }
         Comma,          // ,
         Semicolon,      // ;
+        Colon, // :
 
         // Fim de arquivo
         EOF,            // End of file

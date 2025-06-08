@@ -1,0 +1,25 @@
+# Build
+bin/
+obj/
+
+# Usuário e IDE
+.vscode/
+.vs/
+*.user
+*.suo
+
+# Logs
+*.log
+
+# Outros
+*.pdb
+*.cache
+*.dbmdl
+*.bak
+*.tmp
+
+# Node (caso tenha frontend)
+node_modules/
+
+# Resultados de testes
+TestResults/
