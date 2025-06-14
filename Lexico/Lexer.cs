@@ -1,6 +1,4 @@
-using Compilador;
 using Compilador.Lexico;
-using System.Collections.Generic;
 
 public class Lexer
 {
@@ -100,8 +98,11 @@ public class Lexer
             "for" => TokenType.For,
             "return" => TokenType.Return,
             "var" => TokenType.Var,
-            "true" => TokenType.Boolean,
-            "false" => TokenType.Boolean,
+            "print" => TokenType.Print,
+            "input" => TokenType.Input,
+            "func" => TokenType.Func,
+            "true" => TokenType.True,
+            "false" => TokenType.False,
             _ => TokenType.Identifier
         };
 

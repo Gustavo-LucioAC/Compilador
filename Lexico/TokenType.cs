@@ -38,6 +38,11 @@ namespace Compilador.Lexico
         RightBrace,     // }
         Comma,          // ,
         Semicolon,      // ;
+        Print,       // print
+        Input,      // input
+        Func,       // func
+        True,       // true
+        False,      // false
         Colon, // :
 
         // Fim de arquivo
