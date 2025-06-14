@@ -104,22 +104,22 @@ public class Parser
     }
 
     private AstNode ParseIfStatement()
+{
+    Expect(TokenType.If);
+    Expect(TokenType.LeftParen);
+    var condition = ParseExpression();
+    Expect(TokenType.RightParen);
+
+    var thenBlock = new BlockNode(ParseBlock());
+
+    BlockNode? elseBlock = null;
+    if (Match(TokenType.Else))
     {
-        Expect(TokenType.If);
-        Expect(TokenType.LeftParen);
-        var condition = ParseExpression();
-        Expect(TokenType.RightParen);
-        
-        var thenBlock = new BlockNode(ParseBlock());
-
-        BlockNode? elseBlock = null;
-        if (Match(TokenType.Else))
-        {
-            elseBlock = new BlockNode(ParseBlock());
-        }
-
-        return new IfNode(condition, thenBlock, elseBlock);
+        elseBlock = new BlockNode(ParseBlock());
     }
+
+    return new IfNode(condition, thenBlock, elseBlock);
+}
 
 
     private AstNode ParseWhileStatement()
