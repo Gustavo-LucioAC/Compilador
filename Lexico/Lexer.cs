@@ -29,7 +29,7 @@ public class Lexer
 
         if (char.IsLetter(current) || current == '_')
             return ReadIdentifier();
-        
+
         if (current == '\'')
             return ReadChar();
 
@@ -63,7 +63,7 @@ public class Lexer
         bool hasDot = false;
 
         while (_position < _input.Length &&
-            (char.IsDigit(Peek()) || (Peek() == '.' && !hasDot)))
+              (char.IsDigit(Peek()) || (Peek() == '.' && !hasDot)))
         {
             if (Peek() == '.')
                 hasDot = true;
@@ -76,7 +76,7 @@ public class Lexer
         TokenType type = hasDot ? TokenType.Float : TokenType.Number;
 
         return new Token(type, value, _line, startColumn);
-}
+    }
 
     private Token ReadIdentifier()
     {
@@ -101,8 +101,7 @@ public class Lexer
             "print" => TokenType.Print,
             "input" => TokenType.Input,
             "func" => TokenType.Func,
-            "true" => TokenType.True,
-            "false" => TokenType.False,
+            "true" or "false" => TokenType.Boolean,
             _ => TokenType.Identifier
         };
 
@@ -112,11 +111,9 @@ public class Lexer
     private Token ReadString()
     {
         int startColumn = _column;
-        _position++; // skip "
-        _column++;
+        _position++; _column++; // skip opening "
 
         int start = _position;
-
         while (_position < _input.Length && Peek() != '"')
         {
             if (Peek() == '\n')
@@ -132,21 +129,21 @@ public class Lexer
         }
 
         if (_position >= _input.Length)
-            return new Token(TokenType.Invalid, "String não terminada", _line, _column);
+            return new Token(TokenType.Invalid, "String não terminada", _line, startColumn);
 
         string value = _input.Substring(start, _position - start);
-        _position++; // skip closing "
-        _column++;
+        _position++; _column++; // skip closing "
 
         return new Token(TokenType.String, value, _line, startColumn);
     }
-    
+
     private Token ReadChar()
     {
         int startColumn = _column;
-        _position++; _column++;
+        _position++; _column++; // skip opening '
+
         if (_position >= _input.Length || Peek() == '\n')
-            return new Token(TokenType.Invalid, "Caractere mal formado", _line, startColumn);
+            return new Token(TokenType.Invalid, "Char mal formado", _line, startColumn);
 
         char valueChar = Peek();
         _position++; _column++;
@@ -154,7 +151,7 @@ public class Lexer
         if (_position >= _input.Length || Peek() != '\'')
             return new Token(TokenType.Invalid, "Char mal formado", _line, startColumn);
 
-        _position++; _column++;
+        _position++; _column++; // skip closing '
 
         return new Token(TokenType.Char, valueChar.ToString(), _line, startColumn);
     }
@@ -163,7 +160,6 @@ public class Lexer
     {
         int startColumn = _column;
         char current = Advance();
-
         char? next = PeekOrNull();
 
         return (current, next) switch
@@ -193,8 +189,7 @@ public class Lexer
 
     private Token CreateTwoCharToken(TokenType type, string symbol)
     {
-        _position++;
-        _column++;
+        _position++; _column++; // consume second character
         return new Token(type, symbol, _line, _column - 2);
     }
 
@@ -209,5 +204,20 @@ public class Lexer
         _position++;
         _column++;
         return c;
+    }
+    public List<Token> Tokenize()
+    {
+        var tokens = new List<Token>();
+
+        while (true)
+        {
+            Token token = NextToken();
+            tokens.Add(token);
+
+            if (token.Type == TokenType.EOF || token.Type == TokenType.Invalid)
+                break;
+        }
+
+        return tokens;
     }
 }

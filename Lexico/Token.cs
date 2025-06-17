@@ -18,7 +18,7 @@ namespace Compilador.Lexico
 
         public override string ToString()
         {
-            return $"{Type} ('{Value}') - Linha: {Line}, Coluna: {Column}";
+            return $"{Type} ('{Value}') [linha {Line}, coluna {Column}]";
         }
     }
 }

@@ -11,37 +11,66 @@ public class Parser
         _tokens = tokens;
     }
 
+    // NOVO MÉTODO: ParseProgram
+    public ProgramNode ParseProgram()
+    {
+        var program = new ProgramNode();
+
+        while (!Check(TokenType.EOF))
+        {
+            var stmt = ParseStatement();
+            program.Statements.Add(stmt);
+        }
+
+        return program;
+    }
+
     public AstNode ParseDeclaration()
     {
-        // var
         if (!Match(TokenType.Var))
             throw Error("Esperado 'var'");
 
-        // <identificador>
         Token name = Consume(TokenType.Identifier, "Esperado nome de variável");
-
-        // :
         Consume(TokenType.Colon, "Esperado ':'");
-
-        // <tipo>
         Token type = Consume(TokenType.Identifier, "Esperado tipo da variável");
 
-        // = ou ; (valor opcional)
         AstNode? value = null;
         if (Match(TokenType.Assign))
         {
             value = ParseLiteral();
         }
 
-        // ;
         Consume(TokenType.Semicolon, "Esperado ';'");
-
         return new VarDeclaration(name.Value, type.Value, value);
     }
 
-    private AstNode ParseExpression()
+    private AstNode ParseExpression() => ParsePrimary();
+
+    private AstNode ParsePrimary()
     {
-        return ParseLiteral();
+        if (Match(TokenType.Identifier))
+        {
+            string name = Previous().Value;
+
+            if (Match(TokenType.LeftParen))
+            {
+                var args = new List<AstNode>();
+                if (!Check(TokenType.RightParen))
+                {
+                    do
+                    {
+                        args.Add(ParseExpression());
+                    } while (Match(TokenType.Comma));
+                }
+
+                Consume(TokenType.RightParen, "Esperado ')' após os argumentos da função.");
+                return new FunctionCallNode(name, args);
+            }
+
+            return new IdentifierNode(name);
+        }
+
+        throw Error("Esperado expressão primária (literal, identificador ou chamada de função)");
     }
 
     private AstNode ParseLiteral()
@@ -50,9 +79,11 @@ public class Parser
 
         return token.Type switch
         {
-            TokenType.Number or TokenType.Float or TokenType.String
-            or TokenType.Char or TokenType.Boolean => new Literal(token.Value),
-
+            TokenType.Number => new LiteralNode(int.Parse(token.Value)),
+            TokenType.Float => new LiteralNode(float.Parse(token.Value)),
+            TokenType.Boolean => new LiteralNode(bool.Parse(token.Value)),
+            TokenType.String => new LiteralNode(token.Value),
+            TokenType.Char => new LiteralNode(token.Value[0]),
             _ => throw Error("Esperado literal"),
         };
     }
@@ -77,50 +108,35 @@ public class Parser
         return new InputNode(variable.Value);
     }
 
-    private AstNode ParseStatement()
+    public AstNode ParseStatement()
     {
-        if (Check(TokenType.Var))
-            return ParseDeclaration();
-
-        if (Check(TokenType.Print))
-            return ParsePrintStatement();
-
-        if (Check(TokenType.Input))
-            return ParseInputStatement();
-
-        if (Check(TokenType.If))
-            return ParseIfStatement();
-
-        if (Check(TokenType.While))
-            return ParseWhileStatement();
-
-        if (Check(TokenType.For))
-            return ParseForStatement();
-
-        if (Check(TokenType.Func))
-            return ParseFunctionDeclaration();
+        if (Check(TokenType.Var)) return ParseDeclaration();
+        if (Check(TokenType.Print)) return ParsePrintStatement();
+        if (Check(TokenType.Input)) return ParseInputStatement();
+        if (Check(TokenType.If)) return ParseIfStatement();
+        if (Check(TokenType.While)) return ParseWhileStatement();
+        if (Check(TokenType.For)) return ParseForStatement();
+        if (Check(TokenType.Func)) return ParseFunctionDeclaration();
 
         throw Error("Esperado uma declaração ou instrução");
     }
 
     private AstNode ParseIfStatement()
-{
-    Expect(TokenType.If);
-    Expect(TokenType.LeftParen);
-    var condition = ParseExpression();
-    Expect(TokenType.RightParen);
-
-    var thenBlock = new BlockNode(ParseBlock());
-
-    BlockNode? elseBlock = null;
-    if (Match(TokenType.Else))
     {
-        elseBlock = new BlockNode(ParseBlock());
+        Expect(TokenType.If);
+        Expect(TokenType.LeftParen);
+        var condition = ParseExpression();
+        Expect(TokenType.RightParen);
+        var thenBlock = new BlockNode(ParseBlock());
+
+        BlockNode? elseBlock = null;
+        if (Match(TokenType.Else))
+        {
+            elseBlock = new BlockNode(ParseBlock());
+        }
+
+        return new IfNode(condition, thenBlock, elseBlock);
     }
-
-    return new IfNode(condition, thenBlock, elseBlock);
-}
-
 
     private AstNode ParseWhileStatement()
     {
@@ -221,12 +237,12 @@ public class Parser
         return token;
     }
 
-    private bool IsAtEnd() => Peek().Type == TokenType.EOF;
+    public bool IsAtEnd() => Peek().Type == TokenType.EOF;
 
-    private Token Peek() => _tokens[_position];
+    public Token Peek() => _tokens[_position];
 
-    private Token Previous() => _tokens[_position - 1];
+    public Token Previous() => _tokens[_position - 1];
 
-    private Exception Error(string message) =>
+    public Exception Error(string message) =>
         new Exception($"Erro na linha {Peek().Line}, coluna {Peek().Column}: {message}");
 }

@@ -75,9 +75,15 @@ namespace Compilador.Sintatico
         public BlockNode Body { get; } = body;
     }
 
-    public class ProgramNode(List<AstNode> statements) : AstNode
+    public class FunctionCallNode(string functionName, List<AstNode> arguments) : AstNode
     {
-        public List<AstNode> Statements { get; } = statements;
+        public string FunctionName { get; } = functionName;
+        public List<AstNode> Arguments { get; } = arguments;
+    }
+
+    public class ProgramNode : AstNode
+    {
+        public List<AstNode> Statements { get; } = new List<AstNode>();
     }
 
     public static class SupportedTypes
@@ -117,4 +123,5 @@ namespace Compilador.Sintatico
     {
         public AstNode Value { get; } = value;
     }
+    
 }
