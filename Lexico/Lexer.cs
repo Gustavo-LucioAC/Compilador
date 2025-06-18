@@ -17,7 +17,7 @@ public class Lexer
 
     public Token NextToken()
     {
-        SkipWhitespace();
+        SkipWhitespaceAndComments();
 
         if (_position >= _input.Length)
             return new Token(TokenType.EOF, "", _line, _column);
@@ -39,20 +39,56 @@ public class Lexer
         return ReadSymbolOrOperator();
     }
 
-    private void SkipWhitespace()
+    private void SkipWhitespaceAndComments()
     {
-        while (_position < _input.Length && char.IsWhiteSpace(Peek()))
+        while (_position < _input.Length)
         {
-            if (Peek() == '\n')
+            if (char.IsWhiteSpace(Peek()))
             {
-                _line++;
-                _column = 1;
+                if (Peek() == '\n')
+                {
+                    _line++;
+                    _column = 1;
+                }
+                else
+                {
+                    _column++;
+                }
+                _position++;
             }
-            else
+            else if (Peek() == '/' && PeekOrNull() == '/')
             {
-                _column++;
+                while (_position < _input.Length && Peek() != '\n')
+                {
+                    _position++;
+                    _column++;
+                }
             }
-            _position++;
+            else if (Peek() == '/' && PeekOrNull() == '*')
+            {
+                _position += 2;
+                _column += 2;
+                while (_position < _input.Length &&
+                       !(Peek() == '*' && PeekOrNull() == '/'))
+                {
+                    if (Peek() == '\n')
+                    {
+                        _line++;
+                        _column = 1;
+                    }
+                    else
+                    {
+                        _column++;
+                    }
+                    _position++;
+                }
+                if (_position < _input.Length)
+                {
+                    _position += 2;
+                    _column += 2;
+                }
+            }
+            else break;
         }
     }
 
@@ -114,27 +150,38 @@ public class Lexer
         _position++; _column++; // skip opening "
 
         int start = _position;
+        var sb = new System.Text.StringBuilder();
         while (_position < _input.Length && Peek() != '"')
         {
-            if (Peek() == '\n')
+            if (Peek() == '\\' && PeekOrNull() == '"')
             {
-                _line++;
-                _column = 1;
+                sb.Append('"');
+                _position += 2;
+                _column += 2;
             }
             else
             {
-                _column++;
+                if (Peek() == '\n')
+                {
+                    _line++;
+                    _column = 1;
+                }
+                else
+                {
+                    _column++;
+                }
+
+                sb.Append(Peek());
+                _position++;
             }
-            _position++;
         }
 
         if (_position >= _input.Length)
             return new Token(TokenType.Invalid, "String não terminada", _line, startColumn);
 
-        string value = _input.Substring(start, _position - start);
         _position++; _column++; // skip closing "
 
-        return new Token(TokenType.String, value, _line, startColumn);
+        return new Token(TokenType.String, sb.ToString(), _line, startColumn);
     }
 
     private Token ReadChar()
@@ -172,6 +219,7 @@ public class Lexer
             ('-', _) => new Token(TokenType.Minus, "-", _line, startColumn),
             ('*', _) => new Token(TokenType.Multiply, "*", _line, startColumn),
             ('/', _) => new Token(TokenType.Divide, "/", _line, startColumn),
+            ('%', _) => new Token(TokenType.Modulo, "%", _line, startColumn),
             ('=', _) => new Token(TokenType.Assign, "=", _line, startColumn),
             ('<', _) => new Token(TokenType.LessThan, "<", _line, startColumn),
             ('>', _) => new Token(TokenType.GreaterThan, ">", _line, startColumn),
@@ -205,6 +253,7 @@ public class Lexer
         _column++;
         return c;
     }
+
     public List<Token> Tokenize()
     {
         var tokens = new List<Token>();

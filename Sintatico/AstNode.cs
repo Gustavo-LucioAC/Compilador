@@ -67,11 +67,11 @@ namespace Compilador.Sintatico
         public BlockNode Body { get; } = body;
     }
 
-    public class ForNode(AstNode initialization, AstNode condition, AstNode increment, BlockNode body) : AstNode
+    public class ForNode(AstNode? initialization, AstNode? condition, AstNode? increment, BlockNode body) : AstNode
     {
-        public AstNode Initialization { get; } = initialization;
-        public AstNode Condition { get; } = condition;
-        public AstNode Increment { get; } = increment;
+        public AstNode? Initialization { get; } = initialization;
+        public AstNode? Condition { get; } = condition;
+        public AstNode? Increment { get; } = increment;
         public BlockNode Body { get; } = body;
     }
 
@@ -83,7 +83,28 @@ namespace Compilador.Sintatico
 
     public class ProgramNode : AstNode
     {
-        public List<AstNode> Statements { get; } = new List<AstNode>();
+        public List<AstNode> Statements { get; }
+
+        public ProgramNode(List<AstNode> statements)
+        {
+            Statements = statements;
+        }
+    }
+
+    public class UnaryExpression(string op, AstNode operand) : AstNode
+    {
+        public string Operator { get; } = op;
+        public AstNode Operand { get; } = operand;
+    }
+
+    public class ExpressionStatementNode(AstNode expression) : AstNode
+    {
+        public AstNode Expression { get; } = expression;
+    }
+    public class AssignmentNode(string name, AstNode value) : AstNode
+    {
+        public string Name { get; } = name;
+        public AstNode Value { get; } = value;
     }
 
     public static class SupportedTypes
@@ -119,9 +140,8 @@ namespace Compilador.Sintatico
         public List<AstNode> Body { get; } = body;
     }
 
-    public class ReturnNode(AstNode value) : AstNode
+    public class ReturnNode(AstNode expression) : AstNode
     {
-        public AstNode Value { get; } = value;
+        public AstNode Expression { get; } = expression;
     }
-    
 }

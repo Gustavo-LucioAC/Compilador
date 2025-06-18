@@ -23,6 +23,7 @@ namespace Compilador.Lexico
         Minus,          // -
         Multiply,       // *
         Divide,         // /
+        Modulo,        // %
         Assign,         // =
         Equal,          // ==
         NotEqual,       // !=

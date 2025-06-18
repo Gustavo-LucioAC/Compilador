@@ -11,27 +11,136 @@ namespace Compilador.Interpreter
         private readonly Stack<Dictionary<string, object?>> _locals = new();
         private Dictionary<string, string> _variableTypes = new();
 
+        private object? EvaluateExpression(AstNode node)
+        {
+            switch (node)
+            {
+                case LiteralNode literal:
+                    return literal.Value;
+
+                case IdentifierNode id:
+                    if (_variables.TryGetValue(id.Name, out var value))
+                        return value;
+                    throw new Exception($"Variável '{id.Name}' não declarada.");
+
+                case UnaryExpression unary:
+                    var operand = EvaluateExpression(unary.Operand);
+                    return unary.Operator switch
+                    {
+                        "-" => operand switch
+                        {
+                            int i => -i,
+                            float f => -f,
+                            _ => throw new Exception("Operador '-' aplicado a tipo inválido")
+                        },
+                        "+" => operand switch
+                        {
+                            int i => i,
+                            float f => f,
+                            _ => throw new Exception("Operador '+' aplicado a tipo inválido")
+                        },
+                        _ => throw new Exception($"Operador unário não suportado: {unary.Operator}")
+                    };
+
+                case BinaryExpression binary:
+                    var left = EvaluateExpression(binary.Left);
+                    var right = EvaluateExpression(binary.Right);
+
+                    return (left, right, binary.Operator) switch
+                    {
+                        // Inteiros
+                        (int l, int r, "+") => l + r,
+                        (int l, int r, "-") => l - r,
+                        (int l, int r, "*") => l * r,
+                        (int l, int r, "/") => r != 0 ? l / r : throw new DivideByZeroException(),
+                        (int l, int r, "%") => r != 0 ? l % r : throw new DivideByZeroException(),
+                        (int l, int r, "==") => l == r,
+                        (int l, int r, "!=") => l != r,
+                        (int l, int r, "<") => l < r,
+                        (int l, int r, "<=") => l <= r,
+                        (int l, int r, ">") => l > r,
+                        (int l, int r, ">=") => l >= r,
+
+                        // Floats
+                        (float l, float r, "+") => l + r,
+                        (float l, float r, "-") => l - r,
+                        (float l, float r, "*") => l * r,
+                        (float l, float r, "/") => r != 0 ? l / r : throw new DivideByZeroException(),
+                        (float l, float r, "==") => l == r,
+                        (float l, float r, "!=") => l != r,
+                        (float l, float r, "<") => l < r,
+                        (float l, float r, "<=") => l <= r,
+                        (float l, float r, ">") => l > r,
+                        (float l, float r, ">=") => l >= r,
+
+                        // Booleanos
+                        (bool l, bool r, "==") => l == r,
+                        (bool l, bool r, "!=") => l != r,
+                        (bool l, bool r, "&&") => l && r,
+                        (bool l, bool r, "||") => l || r,
+
+                        // Strings (opcional)
+                        (string l, string r, "+") => l + r,
+
+                        _ => throw new Exception($"Operação binária inválida: {left} {binary.Operator} {right}")
+                    };
+
+                case FunctionCallNode funcCall:
+                    return ExecuteFunctionCall(funcCall);
+
+                default:
+                    throw new Exception($"Tipo de expressão não suportado: {node.GetType().Name}");
+            }
+        }
+
+        private void ExecuteStatement(AstNode node)
+        {
+            switch (node)
+            {
+                case VarDeclaration varDecl:
+                    var value = varDecl.InitialValue != null ? EvaluateExpression(varDecl.InitialValue) : null;
+                    _variables[varDecl.Name] = value;
+                    break;
+
+                case AssignmentNode assign:
+                    var val = EvaluateExpression(assign.Value);
+                    if (_variables.ContainsKey(assign.Name))
+                    {
+                        _variables[assign.Name] = val;
+                    }
+                    else
+                    {
+                        throw new Exception($"Variável '{assign.Name}' não declarada.");
+                    }
+                    break;
+
+                case PrintNode print:
+                    var result = EvaluateExpression(print.Expression);
+                    Console.WriteLine(result);
+                    break;
+
+                case ExpressionStatementNode exprStmt:
+                    EvaluateExpression(exprStmt.Expression);
+                    break;
+
+                default:
+                    throw new Exception($"Tipo de instrução não suportado: {node.GetType().Name}");
+            }
+        }
         public void Execute(ProgramNode program)
         {
-            // 1) Registrar todas as funções
             foreach (var stmt in program.Statements)
             {
                 if (stmt is FunctionNode func)
                 {
                     _functions[func.Name] = func;
                 }
-            }
-
-            // 2) Executar todas as outras instruções (exceto funções)
-            foreach (var stmt in program.Statements)
-            {
-                if (stmt is not FunctionNode)
+                else
                 {
-                    ExecuteNode(stmt);
+                    ExecuteStatement(stmt);
                 }
             }
         }
-
 
         private object? ExecuteNode(AstNode node)
         {
@@ -48,7 +157,7 @@ namespace Compilador.Interpreter
                 VarDeclaration varDecl => ExecuteVarDeclaration(varDecl),
                 BlockNode block => ExecuteBlock(block),
                 FunctionCallNode funcCall => ExecuteFunctionCall(funcCall),
-                ReturnNode returnNode => throw new ReturnException(ExecuteNode(returnNode.Value)),
+                ReturnNode returnNode => throw new ReturnException(ExecuteNode(returnNode.Expression)),
                 _ => throw new Exception($"Tipo de nó não suportado: {node.GetType().Name}")
             };
         }
@@ -171,21 +280,6 @@ namespace Compilador.Interpreter
             return null;
         }
 
-        private object? EvaluateExpression(AstNode node)
-        {
-            return node switch
-            {
-                LiteralNode literal => literal.Value,
-
-                IdentifierNode id => _variables.TryGetValue(id.Name, out var value)
-                    ? value
-                    : throw new Exception($"Variável '{id.Name}' não definida."),
-
-                BinaryExpression binary => EvaluateBinary(binary),
-
-                _ => throw new Exception($"Expressão não suportada: {node.GetType().Name}")
-            };
-        }
 
         private object? ExecuteVarDeclaration(VarDeclaration node)
         {
