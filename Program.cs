@@ -6,24 +6,11 @@ class Program
     static void Main()
     {
         string sourceCode = @"
-            var x: int = 10;
-            var y: int = 20;
-            var z: int;
-            z = x + y * 2;
-
-            print(z);   // Deve imprimir 50
-
-            if (z > 30) {
-                print(""z é maior que 30"");
-            } else {
-                print(""z é menor ou igual a 30"");
-            }
-
-            var count: int = 0;
-            while (count < 3) {
-                print(count);
-                count = count + 1;
-            }
+            var idade: int;
+            print(""Digite sua idade:"");
+            input(idade);
+            print(""Você digitou:"");
+            print(idade);
         ";
 
         var lexer = new Lexer(sourceCode);

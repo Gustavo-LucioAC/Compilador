@@ -31,8 +31,13 @@ public class Interpreter
             case InputNode input:
                 Console.Write($"{input.VariableName}: ");
                 var inputValue = Console.ReadLine() ?? "";
-                // Você pode querer converter inputValue para o tipo correto
-                _variables[input.VariableName] = inputValue;
+
+                if (!_variables.ContainsKey(input.VariableName))
+                    throw new Exception($"Variável '{input.VariableName}' não declarada.");
+
+                var currentValue = _variables[input.VariableName];
+                var convertedValue = ConvertInputToType(inputValue, currentValue.GetType());
+                _variables[input.VariableName] = convertedValue;
                 break;
             case IfNode ifNode:
                 var condition = EvaluateExpression(ifNode.Condition);
@@ -190,5 +195,28 @@ public class Interpreter
             "string" => "",
             _ => null!,
         };
+    }
+
+    private object ConvertInputToType(string input, Type targetType)
+    {
+        try
+        {
+            if (targetType == typeof(int))
+                return int.Parse(input);
+            else if (targetType == typeof(double))
+                return double.Parse(input);
+            else if (targetType == typeof(bool))
+                return bool.Parse(input);
+            else if (targetType == typeof(char))
+                return string.IsNullOrEmpty(input) ? '\0' : input[0];
+            else if (targetType == typeof(string))
+                return input;
+
+            throw new Exception($"Tipo {targetType.Name} não suportado para input.");
+        }
+        catch
+        {
+            throw new Exception($"Entrada inválida para o tipo {targetType.Name}: '{input}'");
+        }
     }
 }
