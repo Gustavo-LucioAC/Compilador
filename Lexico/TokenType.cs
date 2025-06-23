@@ -18,6 +18,12 @@ namespace Compilador.Lexico
         String,         // ".*?"
         Var,           // var
 
+        Int,
+        FloatType,
+        CharType,
+        BoolType,
+        StringType,
+
         // Operadores aritméticos e relacionais
         Plus,           // +
         Minus,          // -

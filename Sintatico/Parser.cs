@@ -4,377 +4,27 @@ using Compilador.Sintatico;
 
 public class Parser
 {
-    public readonly List<Token> _tokens;
-    public int _position = 0;
+    private readonly List<Token> _tokens;
+    private int _position;
 
     public Parser(List<Token> tokens)
     {
         _tokens = tokens;
+        _position = 0;
     }
 
-    public ProgramNode ParseProgram()
+    private Token Current => _position < _tokens.Count ? _tokens[_position] : _tokens[^1];
+    
+    private Token Advance()
     {
-        var statements = new List<AstNode>();
-
-        while (!IsAtEnd())
-        {
-            var stmt = ParseStatement();
-            statements.Add(stmt);
-        }
-
-        return new ProgramNode(statements);
-    }
-    public AstNode ParseExpression() => ParseAssignment();
-    public AstNode ParseDeclaration()
-    {
-        if (!Match(TokenType.Var))
-            throw Error("Esperado 'var'");
-
-        Token name = Consume(TokenType.Identifier, "Esperado nome de variável");
-        Consume(TokenType.Colon, "Esperado ':'");
-        Token type = Consume(TokenType.Identifier, "Esperado tipo da variável");
-
-        AstNode? value = null;
-        if (Match(TokenType.Assign))
-        {
-            value = ParseExpression();
-        }
-
-        Consume(TokenType.Semicolon, "Esperado ';'");
-        return new VarDeclaration(name.Value, type.Value, value);
+        if (_position < _tokens.Count)
+            return _tokens[_position++];
+        return _tokens[^1]; // Retorna EOF token se passar do fim
     }
 
-    public AstNode ParseAssignment()
+    private bool Match(params TokenType[] types)
     {
-        var expr = ParseEquality();
-
-        if (Match(TokenType.Assign))
-        {
-            var equals = Previous();
-            var value = ParseAssignment();
-
-            if (expr is IdentifierNode id)
-            {
-                return new AssignmentNode(id.Name, value);
-            }
-
-            throw Error("Invalid assignment target.");
-        }
-
-        return expr;
-    }
-
-    public AstNode ParseEquality()
-    {
-        var expr = ParseComparison();
-
-        while (Match(TokenType.Equal) || Match(TokenType.NotEqual))
-        {
-            string op = Previous().Value;
-            var right = ParseComparison();
-            expr = new BinaryExpression(expr, op, right);
-        }
-
-        return expr;
-    }
-
-    public AstNode ParseComparison()
-    {
-        var expr = ParseTerm();
-
-        while (Match(TokenType.LessThan) || Match(TokenType.LessOrEqual) || Match(TokenType.GreaterThan) || Match(TokenType.GreaterOrEqual))
-        {
-            string op = Previous().Value;
-            var right = ParseTerm();
-            expr = new BinaryExpression(expr, op, right);
-        }
-
-        return expr;
-    }
-
-    public AstNode ParseTerm()
-    {
-        var expr = ParseFactor();
-
-        while (Match(TokenType.Plus) || Match(TokenType.Minus))
-        {
-            string op = Previous().Value;
-            var right = ParseFactor();
-            expr = new BinaryExpression(expr, op, right);
-        }
-
-        return expr;
-    }
-
-
-    public AstNode ParsePrimary()
-    {
-        if (Match(TokenType.Number))
-            return new LiteralNode(int.Parse(Previous().Value));
-
-        if (Match(TokenType.Float))
-            return new LiteralNode(float.Parse(Previous().Value, CultureInfo.InvariantCulture));
-
-        if (Match(TokenType.Char))
-            return new LiteralNode(Previous().Value[0]);
-
-        if (Match(TokenType.String))
-            return new LiteralNode(Previous().Value);
-
-        if (Match(TokenType.True))
-            return new LiteralNode(true);
-
-        if (Match(TokenType.False))
-            return new LiteralNode(false);
-
-        if (Match(TokenType.Identifier))
-        {
-            string name = Previous().Value;
-
-            if (Match(TokenType.LeftParen))
-            {
-                var args = new List<AstNode>();
-                if (!Check(TokenType.RightParen))
-                {
-                    do
-                    {
-                        args.Add(ParseExpression());
-                    } while (Match(TokenType.Comma));
-                }
-
-                Consume(TokenType.RightParen, "Esperado ')' após os argumentos.");
-                return new FunctionCallNode(name, args);
-            }
-
-            return new IdentifierNode(name);
-        }
-
-        if (Match(TokenType.LeftParen))
-        {
-            var expr = ParseExpression();
-            Consume(TokenType.RightParen, "Esperado ')' após expressão.");
-            return expr;
-        }
-
-        throw Error($"Esperado expressão primária (literal, identificador, chamada de função ou expressão entre parênteses)");
-    }
-
-    public AstNode ParseUnary()
-    {
-        if (Match(TokenType.Minus) || Match(TokenType.Plus))
-        {
-            string op = Previous().Value;
-            var right = ParseUnary();
-            return new UnaryExpression(op, right);
-        }
-
-        return ParsePrimary();
-    }
-    public AstNode ParseLiteral()
-    {
-        Token token = Advance();
-
-        return token.Type switch
-        {
-            TokenType.Number => new LiteralNode(int.Parse(token.Value)),
-            TokenType.Float => new LiteralNode(float.Parse(token.Value)),
-            TokenType.Boolean => new LiteralNode(bool.Parse(token.Value)),
-            TokenType.String => new LiteralNode(token.Value),
-            TokenType.Char => new LiteralNode(token.Value[0]),
-            _ => throw Error("Esperado literal"),
-        };
-    }
-
-    private AstNode ParseReturnStatement()
-    {
-        var returnToken = Expect(TokenType.Return);
-        var expr = ParseExpression();
-        Expect(TokenType.Semicolon);
-        return new ReturnNode(expr)
-        {
-            Line = returnToken.Line,
-            Column = returnToken.Column
-        };
-    }
-
-    public AstNode ParsePrintStatement()
-    {
-        Expect(TokenType.Print);
-        Expect(TokenType.LeftParen);
-        var expr = ParseExpression();
-        Expect(TokenType.RightParen);
-        Expect(TokenType.Semicolon);
-        return new PrintNode(expr);
-    }
-
-    public AstNode ParseInputStatement()
-    {
-        Expect(TokenType.Input);
-        Expect(TokenType.LeftParen);
-        var variable = Expect(TokenType.Identifier);
-        Expect(TokenType.RightParen);
-        Expect(TokenType.Semicolon);
-        return new InputNode(variable.Value);
-    }
-
-    private AstNode ParseStatement()
-    {
-        if (Match(TokenType.Var)) return ParseDeclaration();
-        if (Match(TokenType.If)) return ParseIfStatement();
-        if (Match(TokenType.While)) return ParseWhileStatement();
-        if (Match(TokenType.For)) return ParseForStatement();
-        if (Match(TokenType.Return)) return ParseReturnStatement();
-        if (Match(TokenType.Print)) return ParsePrintStatement();
-        
-        return ParseExpressionStatement();
-    }
-
-    public AstNode ParseIfStatement()
-    {
-        Expect(TokenType.If);
-        Expect(TokenType.LeftParen);
-        var condition = ParseExpression();
-        Expect(TokenType.RightParen);
-        var thenBlock = new BlockNode(ParseBlock());
-
-        BlockNode? elseBlock = null;
-        if (Match(TokenType.Else))
-        {
-            elseBlock = new BlockNode(ParseBlock());
-        }
-
-        return new IfNode(condition, thenBlock, elseBlock);
-    }
-
-    public AstNode ParseFactor()
-    {
-        var expr = ParseUnary();
-
-        while (Match(TokenType.Multiply) || Match(TokenType.Divide) || Match(TokenType.Modulo))
-        {
-            string op = Previous().Value;
-            var right = ParseUnary();
-            expr = new BinaryExpression(expr, op, right);
-        }
-
-        return expr;
-    }
-
-    public AstNode ParseWhileStatement()
-    {
-        Expect(TokenType.While);
-        Expect(TokenType.LeftParen);
-        var condition = ParseExpression();
-        Expect(TokenType.RightParen);
-        var body = new BlockNode(ParseBlock());
-        return new WhileNode(condition, body);
-    }
-
-    public AstNode ParseForStatement()
-    {
-        Consume(TokenType.For, "Esperado 'for'.");
-
-        Consume(TokenType.LeftParen, "Esperado '(' após 'for'.");
-
-        // 1. Inicialização (pode ser declaração var ou expressão ou vazio)
-        AstNode? initialization = null;
-        if (!Check(TokenType.Semicolon))
-        {
-            if (Check(TokenType.Var))
-            {
-                initialization = ParseVarDeclarationInFor();
-            }
-            else
-            {
-                initialization = ParseExpression();
-            }
-        }
-        Consume(TokenType.Semicolon, "Esperado ';' após inicialização do for.");
-
-        // 2. Condição (expressão ou vazio)
-        AstNode? condition = null;
-        if (!Check(TokenType.Semicolon))
-        {
-            condition = ParseAssignment(); // usar ParseAssignment aqui também
-        }
-        Consume(TokenType.Semicolon, "Esperado ';' após condição do for.");
-
-        // 3. Incremento (expressão ou vazio)
-        AstNode? increment = null;
-        if (!Check(TokenType.RightParen))
-        {
-            increment = ParseAssignment();  // <-- aqui, troque ParseExpression por ParseAssignment
-        }
-        Consume(TokenType.RightParen, "Esperado ')' após incremento do for.");
-
-        // 4. Corpo do for (bloco)
-        var body = ParseBlock();
-
-        return new ForNode(initialization, condition, increment, new BlockNode(body));
-    }
-
-    public AstNode ParseVarDeclarationInFor()
-    {
-        Consume(TokenType.Var, "Esperado 'var'");
-
-        Token name = Consume(TokenType.Identifier, "Esperado nome de variável");
-        Consume(TokenType.Colon, "Esperado ':'");
-        Token type = Consume(TokenType.Identifier, "Esperado tipo da variável");
-
-        AstNode? value = null;
-        if (Match(TokenType.Assign))
-        {
-            value = ParseAssignment();
-        }
-        return new VarDeclaration(name.Value, type.Value, value);
-    }
-
-    public AstNode ParseExpressionStatement()
-    {
-        var expr = ParseExpression();
-        Expect(TokenType.Semicolon);
-        return new ExpressionStatementNode(expr);
-    }
-
-    public AstNode ParseFunctionDeclaration()
-    {
-        Expect(TokenType.Func);
-        
-        var returnType = Expect(TokenType.Identifier).Value; // pega "int"
-        var name = Expect(TokenType.Identifier).Value;        // pega "soma"
-        
-        Expect(TokenType.LeftParen);
-
-        var parameters = new List<Parameter>();
-        if (!Match(TokenType.RightParen))
-        {
-            do
-            {
-                var paramType = Expect(TokenType.Identifier).Value; // pega "int"
-                var paramName = Expect(TokenType.Identifier).Value; // pega "a"
-                parameters.Add(new Parameter(paramName, paramType));
-            } while (Match(TokenType.Comma));
-        }
-
-        Expect(TokenType.RightParen);
-        var body = new BlockNode(ParseBlock());
-        return new FunctionNode(name, parameters, returnType, body);
-    }
-
-    public List<AstNode> ParseBlock()
-    {
-        Expect(TokenType.LeftBrace);
-        var statements = new List<AstNode>();
-        while (!Match(TokenType.RightBrace))
-        {
-            statements.Add(ParseStatement());
-        }
-        return statements;
-    }
-
-    public bool Match(TokenType type)
-    {
-        if (Check(type))
+        if (types.Contains(Current.Type))
         {
             Advance();
             return true;
@@ -382,40 +32,247 @@ public class Parser
         return false;
     }
 
-    public Token Consume(TokenType type, string message)
+    private Token? MatchToken(params TokenType[] types)
     {
-        if (Check(type)) return Advance();
-        throw Error(message);
-    }
-
-    public bool Check(TokenType type)
-    {
-        if (IsAtEnd() && type != TokenType.EOF) return false;
-        return Peek().Type == type;
-    }
-
-    public Token Advance()
-    {
-        if (!IsAtEnd()) _position++;
-        return Previous();
-    }
-
-    public Token Expect(TokenType expectedType)
-    {
-        Token token = Advance();
-        if (token.Type != expectedType)
+        if (types.Contains(Current.Type))
         {
-            throw new Exception($"Esperado: {expectedType}, mas encontrado: {token.Type} (Valor: '{token.Value}', Linha: {token.Line}, Coluna: {token.Column})");
+            return Advance();
         }
-        return token;
+        return null;
     }
 
-    public bool IsAtEnd() => Peek().Type == TokenType.EOF;
+    private Token Expect(TokenType type, string error)
+    {
+        if (Current.Type == type)
+            return Advance();
 
-    public Token Peek() => _tokens[_position];
+        throw new Exception($"Erro na linha {Current.Line}: {error}, encontrado '{Current.Value}'");
+    }
 
-    public Token Previous() => _tokens[_position - 1];
+    public ProgramNode ParseProgram()
+    {
+        var program = new ProgramNode();
 
-    public Exception Error(string message) =>
-        new Exception($"Erro na linha {Peek().Line}, coluna {Peek().Column}: {message}");
+        while (Current.Type != TokenType.EOF)
+        {
+            var stmt = ParseStatement();
+            if (stmt != null)
+                program.Statements.Add(stmt);
+        }
+
+        return program;
+    }
+
+    private StatementNode ParseStatement()
+    {
+        return Current.Type switch
+        {
+            TokenType.Var => ParseVariableDeclaration(),
+            TokenType.Print => ParsePrint(),
+            TokenType.Input => ParseInput(),
+            TokenType.If => ParseIf(),
+            TokenType.While => ParseWhile(),
+            TokenType.Identifier when Peek().Type == TokenType.Assign => ParseAssignment(),
+            _ => throw new Exception($"Comando inesperado na linha {Current.Line}: '{Current.Value}'")
+        };
+    }
+
+    private VariableDeclarationNode ParseVariableDeclaration()
+    {
+        Expect(TokenType.Var, "Esperado 'var'");
+        var name = Expect(TokenType.Identifier, "Esperado nome da variável").Value;
+        Expect(TokenType.Colon, "Esperado ':' após nome da variável");
+
+        var typeToken = MatchToken(TokenType.Int, TokenType.FloatType, TokenType.CharType, TokenType.BoolType, TokenType.StringType);
+        if (typeToken == null)
+            throw new Exception("Esperado tipo da variável");
+
+        string type = typeToken.Value;
+
+        ExpressionNode? initializer = null;
+        if (Match(TokenType.Assign))
+        {
+            initializer = ParseExpression();
+        }
+
+        Expect(TokenType.Semicolon, "Esperado ';' após declaração");
+
+        return new VariableDeclarationNode { Name = name, Type = type, Initializer = initializer };
+    }
+
+    private PrintNode ParsePrint()
+    {
+        Expect(TokenType.Print, "Esperado 'print'");
+        Expect(TokenType.LeftParen, "Esperado '(' após print");
+        var expr = ParseExpression();
+        Expect(TokenType.RightParen, "Esperado ')' após expressão");
+        Expect(TokenType.Semicolon, "Esperado ';' após print");
+        return new PrintNode { Expression = expr };
+    }
+
+    private InputNode ParseInput()
+    {
+        Expect(TokenType.Input, "Esperado 'input'");
+        Expect(TokenType.LeftParen, "Esperado '(' após input");
+        var variable = Expect(TokenType.Identifier, "Esperado nome da variável");
+        Expect(TokenType.RightParen, "Esperado ')' após variável");
+        Expect(TokenType.Semicolon, "Esperado ';' após input");
+        return new InputNode { VariableName = variable.Value };
+    }
+
+    private IfNode ParseIf()
+    {
+        Expect(TokenType.If, "Esperado 'if'");
+        Expect(TokenType.LeftParen, "Esperado '(' após 'if'");
+        var condition = ParseExpression();
+        Expect(TokenType.RightParen, "Esperado ')' após condição");
+
+        var thenBlock = ParseBlock();
+
+        List<StatementNode>? elseBlock = null;
+        if (Match(TokenType.Else))
+        {
+            elseBlock = ParseBlock();
+        }
+
+        return new IfNode
+        {
+            Condition = condition,
+            ThenBlock = thenBlock,
+            ElseBlock = elseBlock
+        };
+    }
+
+    private WhileNode ParseWhile()
+    {
+        Expect(TokenType.While, "Esperado 'while'");
+        Expect(TokenType.LeftParen, "Esperado '(' após 'while'");
+        var condition = ParseExpression();
+        Expect(TokenType.RightParen, "Esperado ')' após condição");
+        var body = ParseBlock();
+        return new WhileNode { Condition = condition, Body = body };
+    }
+
+    private AssignmentNode ParseAssignment()
+    {
+        var name = Expect(TokenType.Identifier, "Esperado nome de variável").Value;
+        Expect(TokenType.Assign, "Esperado '=' na atribuição");
+        var value = ParseExpression();
+        Expect(TokenType.Semicolon, "Esperado ';' após atribuição");
+        return new AssignmentNode { Name = name, Value = value };
+    }
+
+    private List<StatementNode> ParseBlock()
+    {
+        Expect(TokenType.LeftBrace, "Esperado '{'");
+        var statements = new List<StatementNode>();
+
+        while (Current.Type != TokenType.RightBrace && Current.Type != TokenType.EOF)
+        {
+            statements.Add(ParseStatement());
+        }
+
+        Expect(TokenType.RightBrace, "Esperado '}'");
+        return statements;
+    }
+
+    private ExpressionNode ParseExpression()
+    {
+        return ParseEquality();
+    }
+
+    private ExpressionNode ParseEquality()
+    {
+        var expr = ParseComparison();
+
+        while (Match(TokenType.Equal, TokenType.NotEqual))
+        {
+            string op = _tokens[_position - 1].Value;
+            var right = ParseComparison();
+            expr = new BinaryExpressionNode { Left = expr, Operator = op, Right = right };
+        }
+
+        return expr;
+    }
+
+    private ExpressionNode ParseComparison()
+    {
+        var expr = ParseTerm();
+
+        while (Match(TokenType.LessThan, TokenType.LessOrEqual, TokenType.GreaterThan, TokenType.GreaterOrEqual))
+        {
+            string op = _tokens[_position - 1].Value;
+            var right = ParseTerm();
+            expr = new BinaryExpressionNode { Left = expr, Operator = op, Right = right };
+        }
+
+        return expr;
+    }
+
+    private ExpressionNode ParseTerm()
+    {
+        var expr = ParseFactor();
+
+        while (Match(TokenType.Plus, TokenType.Minus))
+        {
+            string op = _tokens[_position - 1].Value;
+            var right = ParseFactor();
+            expr = new BinaryExpressionNode { Left = expr, Operator = op, Right = right };
+        }
+
+        return expr;
+    }
+
+    private ExpressionNode ParseFactor()
+    {
+        var expr = ParseUnary();
+
+        while (Match(TokenType.Multiply, TokenType.Divide, TokenType.Modulo))
+        {
+            string op = _tokens[_position - 1].Value;
+            var right = ParseUnary();
+            expr = new BinaryExpressionNode { Left = expr, Operator = op, Right = right };
+        }
+
+        return expr;
+    }
+
+    private ExpressionNode ParseUnary()
+    {
+        if (Match(TokenType.Minus))
+        {
+            string op = "-";
+            var right = ParsePrimary();
+            return new BinaryExpressionNode { Left = new LiteralNode { Value = 0 }, Operator = op, Right = right };
+        }
+
+        return ParsePrimary();
+    }
+
+    private ExpressionNode ParsePrimary()
+    {
+        var token = Advance();
+
+        return token.Type switch
+        {
+            TokenType.Number => new LiteralNode { Value = int.Parse(token.Value, CultureInfo.InvariantCulture) },
+            TokenType.Float => new LiteralNode { Value = double.Parse(token.Value, CultureInfo.InvariantCulture) },
+            TokenType.Char => new LiteralNode { Value = token.Value[0] },
+            TokenType.String => new LiteralNode { Value = token.Value },
+            TokenType.Boolean => new LiteralNode { Value = token.Value == "true" },
+            TokenType.Identifier => new IdentifierNode { Name = token.Value },
+            TokenType.LeftParen => ParseGrouped(),
+            _ => throw new Exception($"Expressão inválida na linha {token.Line}")
+        };
+    }
+
+    private ExpressionNode ParseGrouped()
+    {
+        var expr = ParseExpression();
+        Expect(TokenType.RightParen, "Esperado ')' após expressão");
+        return expr;
+    }
+
+    private Token Peek() =>
+        _position + 1 < _tokens.Count ? _tokens[_position + 1] : _tokens[^1];
 }

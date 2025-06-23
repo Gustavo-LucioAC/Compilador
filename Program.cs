@@ -1,47 +1,43 @@
-﻿using Compilador.Interpreter;
-using Compilador.Lexico;
+﻿using Compilador.Lexico; 
 using Compilador.Sintatico;
-using System;
 
 class Program
 {
-    static void Main(string[] args)
+    static void Main()
     {
-        Console.WriteLine("Digite o caminho do arquivo de código-fonte (.txt):");
+        string sourceCode = @"
+            var x: int = 10;
+            var y: int = 20;
+            var z: int;
+            z = x + y * 2;
 
-        string? input = Console.ReadLine();
-        if (string.IsNullOrWhiteSpace(input))
-        {
-            Console.WriteLine("Caminho inválido.");
-            return;
-        }
-        string path = input;
+            print(z);   // Deve imprimir 50
 
-        string codigo = File.ReadAllText(path);
+            if (z > 30) {
+                print(""z é maior que 30"");
+            } else {
+                print(""z é menor ou igual a 30"");
+            }
 
-        try
-        {
-            var lexer = new Lexer(codigo);
-            var tokens = new List<Token>();
-            Token token;
-            do
-            {
-                token = lexer.NextToken();
-                tokens.Add(token);
-            } while (token.Type != TokenType.EOF);
+            var count: int = 0;
+            while (count < 3) {
+                print(count);
+                count = count + 1;
+            }
+        ";
 
-            foreach (var t in tokens)
-            Console.WriteLine($"{t.Type} - '{t.Value}' (linha {t.Line}, coluna {t.Column})");
+        var lexer = new Lexer(sourceCode);
+        var tokens = lexer.Tokenize();
 
-            var parser = new Parser(tokens);
+        var parser = new Parser(tokens);
+        var program = parser.ParseProgram();
 
-            var programNode = parser.ParseProgram();
-            var interpreter = new Interpreter();
-            interpreter.Execute(programNode);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Erro ao interpretar o código: {ex.Message}");
-        }
+        // Análise semântica
+        var semanticAnalyzer = new SemanticAnalyzer();
+        semanticAnalyzer.Analyze(program);
+
+        // Interpretar
+        var interpreter = new Interpreter();
+        interpreter.Interpret(program);
     }
 }
