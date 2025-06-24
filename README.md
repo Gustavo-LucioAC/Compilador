@@ -1,96 +1,128 @@
-Compilador Simples em C#
+# Compilador
 
-Este repositório contém a implementação completa de um compilador simples para uma linguagem inspirada em C#/Java, com suporte a:
+Este projeto é um compilador simples em C# com as etapas de:
+- Análise Léxica
+- Análise Sintática
+- Análise Semântica
+- Interpretação de código
 
-- Tipos primitivos: int, float, bool, char, string
-- Declaração de variáveis: var nome: tipo = valor;
-- Entrada e saída: input(var); e print(expr);
-- Controle de fluxo: if/else, while, for
-- Funções: func nome(params): tipo { ... } com parâmetros tipados e retorno
-- Operadores: aritméticos (+, -, *, /, %), relacionais (<, <=, >, >=, ==, !=)
+## Estrutura do Projeto
 
-Estrutura do Projeto
-
-/Compilador
+```
+Compilador/
 │
-├─ Compilador.Lexico/
-│   ├─ Lexer.cs           Tokenização do input
-│   └─ Token.cs           Definição de Token e TokenType
+├── Compilador.csproj
+├── Program.cs
 │
-├─ Compilador.Sintatico/
-│   ├─ Parser.cs          Constrói a AST a partir dos tokens
-│   ├─ AstNodes.cs        Definição de nós da AST
-│   └─ FunctionSymbol.cs  Símbolo de função para semântica
+├── Lexico/
+│   ├── Lexer.cs
+│   ├── Token.cs
+│   └── TokenType.cs
 │
-├─ Compilador.Semantico/
-│   └─ SemanticAnalyzer.cs  Verificação de tipos, escopos e chamadas
+├── Sintatico/
+│   ├── Parser.cs
+│   ├── AstNodes.cs
+│   └── FunctionSymbol.cs
 │
-├─ Compilador.Interpretador/
-│   └─ Interpreter.cs     Executa a AST interpretativamente
+├── SemanticAnalyzer/
+│   └── SemanticAnalyzer.cs
 │
-└─ Program.cs            Entry point (file read or embedded test)
+└── Interpreter/
+    └── Interpreter.cs
+```
 
-Como Funciona
+## Componentes
 
-1. Leitura do código-fonte
-   - Se for passado um arquivo .txt como argumento, o programa lê esse arquivo.
-   - Caso contrário, usa um bloco de teste embutido.
+### Léxico (`Lexico/`)
+- **Lexer.cs**: converte o código-fonte em uma sequência de tokens.
+- **Token.cs**: define a estrutura de um token.
+- **TokenType.cs**: enumeração de tipos de tokens (palavras-chave, operadores, literais etc.).
 
-2. Análise Léxica (Lexer)
-   - Divide o texto em tokens (palavras-chave, identificadores, literais, operadores, símbolos).
-   - Ignora comentários e espaços em branco.
+### Sintático (`Sintatico/`)
+- **Parser.cs**: gera a AST (Abstract Syntax Tree) a partir dos tokens.
+- **AstNodes.cs**: classes que representam nós de declaração, expressão, laços, funções.
+- **FunctionSymbol.cs**: modelo de símbolo de função para a análise semântica.
 
-3. Análise Sintática (Parser)
-   - Constrói a AST com nós de declaração, expressão, laços, funções etc.
-   - Métodos principais: ParseProgram, ParseStatement, ParseExpression.
+### Semântico (`SemanticAnalyzer/`)
+- **SemanticAnalyzer.cs**: verifica tipos, compatibilidade de expressões, escopos e declarações.
+- **Symbol & Scope**: gerenciam o contexto de variáveis e funções.
 
-4. Análise Semântica (SemanticAnalyzer)
-   - Valida escopos e compatibilidade de tipos.
-   - Registra funções e variáveis antes de analisar corpo e chamadas.
-   - Garante que chamadas de função e operadores usem tipos corretos.
+### Interpretador (`Interpreter/`)
+- **Interpreter.cs**: executa a AST interpretativamente, mantendo estado de variáveis e funções.
 
-5. Interpretação (Interpreter)
-   - Avalia a AST em tempo de execução.
-   - Mantém dicionário de variáveis e tabela de funções.
-   - Executa print, input, laços, expressões e chamadas de função.
+### Ponto de Entrada
+- **Program.cs**: orquestra o fluxo completo:
+  1. Leitura do código-fonte (arquivo `.txt` ou teste embutido)
+  2. Tokenização (Lexer)
+  3. Parsing (Parser)
+  4. Análise Semântica (SemanticAnalyzer)
+  5. Interpretação (Interpreter)
 
-Como Usar
+## Funcionalidades Suportadas
 
-1. Compile:
+- Declaração de variáveis tipadas (`var nome: tipo = valor;`)
+- Literais: números inteiros e float, strings, chars, booleanos
+- Atribuição e inicialização
+- Entrada (`input`) e saída (`print`)
+- Controle de fluxo: `if/else`, `while`, `for`
+- Operadores aritméticos (`+ - * / %`)
+- Operadores relacionais (`< <= > >= == !=`)
+- Funções com parâmetros e retorno (`func nome(params): tipo { ... }`)
+
+## Como Utilizar
+
+1. **Pré-requisitos**  
+   - .NET 6.0 ou superior instalado.
+
+2. **Compilação**  
+   ```bash
    dotnet build
+   ```
 
-2. Execute:
-   - Sem argumentos: dotnet run
-   - Com arquivo: dotnet run -- caminho/para/program.txt
+3. **Execução**  
+   - Sem argumentos:  
+     ```bash
+     dotnet run
+     ```
+     usa o código de teste interno.  
+   - Com arquivo de entrada:  
+     ```bash
+     dotnet run -- caminho/para/program.txt
+     ```
 
-Formato do program.txt
+4. **Exemplo de `program.txt`**  
+   ```
+   print("Olá, mundo!");
+   var x: int = 3;
+   while (x > 0) {
+       print(x);
+       x = x - 1;
+   }
 
-print("Olá, mundo!");
-var x: int = 10;
-while (x > 0) {
-    print(x);
-    x = x - 1;
-}
-func dobro(n: int): int {
-    return n * 2;
-}
-print(dobro(5));
+   func dobro(n: int): int {
+       return n * 2;
+   }
 
-Exemplo de saída:
+   print(dobro(x));
+   ```
 
+## Exemplo de Saída
+
+```
 Olá, mundo!
-10
-9
-8
-7
-6
-5
-4
 3
 2
 1
-10
+6
+```
 
-Licença
+## Futuras Extensões
+
+- Suporte a `break` e `continue` em laços  
+- Vetores e matrizes  
+- Geração de bytecode ou código intermediário  
+- Melhor tratamento de erros e mensagens detalhadas  
+
+---
 
 MIT © 2025
