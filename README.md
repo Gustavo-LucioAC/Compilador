@@ -115,14 +115,7 @@ Olá, mundo!
 1
 6
 ```
-
-## Futuras Extensões
-
-- Suporte a `break` e `continue` em laços  
-- Vetores e matrizes  
-- Geração de bytecode ou código intermediário  
-- Melhor tratamento de erros e mensagens detalhadas  
-
----
+Gustavo Lúcio Alves Cruz - 1221116563
+Beatriz Silva Murta - RA: 1221127974
 
 MIT © 2025
