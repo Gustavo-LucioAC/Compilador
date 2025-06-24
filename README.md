@@ -115,7 +115,8 @@ Olá, mundo!
 1
 6
 ```
-Gustavo Lúcio Alves Cruz - 1221116563
-Beatriz Silva Murta - RA: 1221127974
+## INTEGRANTES DO GRUPO
+1. Gustavo Lúcio Alves Cruz - 1221116563
+2. Beatriz Silva Murta - RA: 1221127974
 
 MIT © 2025
