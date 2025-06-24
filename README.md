@@ -61,5 +61,3 @@ dotnet run
 * Estruturas de repetição adicionais (for)
 * Análise e tratamento de erros mais detalhados
 * Geração de código intermediário
-## Licença
-MIT License. Veja o arquivo LICENSE para mais detalhes.
