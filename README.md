@@ -1,63 +1,96 @@
-# Compilador
+Compilador Simples em C#
 
-Este projeto é um compilador simples com análise léxica, sintática, semântica e interpretação de código, desenvolvido em C#.
+Este repositório contém a implementação completa de um compilador simples para uma linguagem inspirada em C#/Java, com suporte a:
 
-## Estrutura do Projeto
+- Tipos primitivos: int, float, bool, char, string
+- Declaração de variáveis: var nome: tipo = valor;
+- Entrada e saída: input(var); e print(expr);
+- Controle de fluxo: if/else, while, for
+- Funções: func nome(params): tipo { ... } com parâmetros tipados e retorno
+- Operadores: aritméticos (+, -, *, /, %), relacionais (<, <=, >, >=, ==, !=)
 
-Compilador/ ├── Compilador.csproj ├── Program.cs ├── Interpreter/ │ └── Interpreter.cs ├── Lexico/ │ ├── Lexer.cs │ ├── Token.cs │ └── TokenType.cs ├── SemanticAnalyzer/ │ └── SemanticAanalyzer.cs ├── Sintatico/ │ ├── Node.cs │ └── Parser.cs └── ...
+Estrutura do Projeto
 
-## Componentes
+/Compilador
+│
+├─ Compilador.Lexico/
+│   ├─ Lexer.cs           Tokenização do input
+│   └─ Token.cs           Definição de Token e TokenType
+│
+├─ Compilador.Sintatico/
+│   ├─ Parser.cs          Constrói a AST a partir dos tokens
+│   ├─ AstNodes.cs        Definição de nós da AST
+│   └─ FunctionSymbol.cs  Símbolo de função para semântica
+│
+├─ Compilador.Semantico/
+│   └─ SemanticAnalyzer.cs  Verificação de tipos, escopos e chamadas
+│
+├─ Compilador.Interpretador/
+│   └─ Interpreter.cs     Executa a AST interpretativamente
+│
+└─ Program.cs            Entry point (file read or embedded test)
 
-### Léxico (`Lexico/`)
-- **[`Lexer`](Lexico/Lexer.cs)**: Responsável por transformar o código fonte em uma lista de tokens.
-- **[`Token`](Lexico/Token.cs)**: Representa um token identificado pelo lexer.
-- **[`TokenType`](Lexico/TokenType.cs)**: Enumeração dos tipos de tokens reconhecidos.
+Como Funciona
 
-### Sintático (`Sintatico/`)
-- **[`Parser`](Sintatico/Parser.cs)**: Constrói a árvore sintática abstrata (AST) a partir dos tokens.
-- **[`Node`](Sintatico/Node.cs)**: Define os nós da AST, incluindo comandos, expressões, declarações, etc.
+1. Leitura do código-fonte
+   - Se for passado um arquivo .txt como argumento, o programa lê esse arquivo.
+   - Caso contrário, usa um bloco de teste embutido.
 
-### Semântico (`SemanticAnalyzer/`)
-- **[`SemanticAnalyzer`](SemanticAnalyzer/SemanticAanalyzer.cs)**: Realiza a análise semântica, verificando tipos, declarações e escopos.
-- **`Symbol` e `Scope`**: Gerenciam símbolos e escopos para a análise semântica.
+2. Análise Léxica (Lexer)
+   - Divide o texto em tokens (palavras-chave, identificadores, literais, operadores, símbolos).
+   - Ignora comentários e espaços em branco.
 
-### Interpretador (`Interpreter/`)
-- **[`Interpreter`](Interpreter/Interpreter.cs)**: Executa o programa representado pela AST, simulando a execução do código fonte.
+3. Análise Sintática (Parser)
+   - Constrói a AST com nós de declaração, expressão, laços, funções etc.
+   - Métodos principais: ParseProgram, ParseStatement, ParseExpression.
 
-### Principal
-- **[`Program`](Program.cs)**: Ponto de entrada do projeto. Faz a integração entre as etapas: léxica, sintática, semântica e interpretação.
+4. Análise Semântica (SemanticAnalyzer)
+   - Valida escopos e compatibilidade de tipos.
+   - Registra funções e variáveis antes de analisar corpo e chamadas.
+   - Garante que chamadas de função e operadores usem tipos corretos.
 
-## Exemplo de Código Suportado
+5. Interpretação (Interpreter)
+   - Avalia a AST em tempo de execução.
+   - Mantém dicionário de variáveis e tabela de funções.
+   - Executa print, input, laços, expressões e chamadas de função.
 
-```cs
-var idade: int;
-print("Digite sua idade:");
-input(idade);
-print("Você digitou:");
-print(idade);
-```
+Como Usar
 
+1. Compile:
+   dotnet build
 
-Como Executar
-Requisitos: .NET 9.0 ou superior.
-1. Compilar:
-```cs
-dotnet build
-```
-2. Executar:
-```cs
-dotnet run
-```
+2. Execute:
+   - Sem argumentos: dotnet run
+   - Com arquivo: dotnet run -- caminho/para/program.txt
 
-## Funcionalidades Suportadas
-* Declaração de variáveis com tipos (int, float, char, bool, string)
-* Atribuição e inicialização de variáveis
-* Comandos de entrada (input) e saída (print)
-* Estruturas de controle: if, else, while
-* Expressões aritméticas e booleanas
-* Análise semântica de tipos e escopos
-* Extensões Futuras
-* Suporte a funções e procedimentos
-* Estruturas de repetição adicionais (for)
-* Análise e tratamento de erros mais detalhados
-* Geração de código intermediário
+Formato do program.txt
+
+print("Olá, mundo!");
+var x: int = 10;
+while (x > 0) {
+    print(x);
+    x = x - 1;
+}
+func dobro(n: int): int {
+    return n * 2;
+}
+print(dobro(5));
+
+Exemplo de saída:
+
+Olá, mundo!
+10
+9
+8
+7
+6
+5
+4
+3
+2
+1
+10
+
+Licença
+
+MIT © 2025
