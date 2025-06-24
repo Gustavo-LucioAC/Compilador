@@ -138,7 +138,6 @@ public class Lexer
             "input" => TokenType.Input,
             "func" => TokenType.Func,
             "true" or "false" => TokenType.Boolean,
-
             "int" => TokenType.Int,
             "float" => TokenType.FloatType,
             "char" => TokenType.CharType,
