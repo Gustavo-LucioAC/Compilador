@@ -29,36 +29,37 @@ Compilador/ ├── Compilador.csproj ├── Program.cs ├── Interpret
 
 ## Exemplo de Código Suportado
 
-```plaintext
+```cs
 var idade: int;
 print("Digite sua idade:");
 input(idade);
 print("Você digitou:");
 print(idade);
+```
 
 
 Como Executar
 Requisitos: .NET 9.0 ou superior.
-Compilar:
-
+1. Compilar:
+```cs
 dotnet build
-
-Executar:
+```
+2. Executar:
+```cs
 dotnet run
+```
 
-O código fonte de exemplo está embutido em Program.cs, mas você pode modificar para ler de arquivos ou entrada do usuário.
-
-Funcionalidades Suportadas
-Declaração de variáveis com tipos (int, float, char, bool, string)
-Atribuição e inicialização de variáveis
-Comandos de entrada (input) e saída (print)
-Estruturas de controle: if, else, while
-Expressões aritméticas e booleanas
-Análise semântica de tipos e escopos
-Extensões Futuras
-Suporte a funções e procedimentos
-Estruturas de repetição adicionais (for)
-Análise e tratamento de erros mais detalhados
-Geração de código intermediário
-Licença
+## Funcionalidades Suportadas
+* Declaração de variáveis com tipos (int, float, char, bool, string)
+* Atribuição e inicialização de variáveis
+* Comandos de entrada (input) e saída (print)
+* Estruturas de controle: if, else, while
+* Expressões aritméticas e booleanas
+* Análise semântica de tipos e escopos
+* Extensões Futuras
+* Suporte a funções e procedimentos
+* Estruturas de repetição adicionais (for)
+* Análise e tratamento de erros mais detalhados
+* Geração de código intermediário
+## Licença
 MIT License. Veja o arquivo LICENSE para mais detalhes.
