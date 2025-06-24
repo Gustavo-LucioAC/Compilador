@@ -3,30 +3,34 @@
     static void Main()
     {
         string sourceCode = @"
-            var numero: int;
-            print(""Digite um número:"");
-            input(numero);
-            print(""Você digitou:"");
-            print(numero);
+            var x: int = 5;
+            var y: float = 3.2;
+            var nome: string = ""João"";
+            var ativo: bool = false;
 
-            var x: int = numero;
-            var y: int = 20;
-            var z: int;
-            z = x + y * 2;
+            print(""Nome:"");
+            print(nome);
 
-            print(z);
-
-            if (z > 30) {
-                print(""z é maior que 30"");
+            if (ativo) {
+                print(""Usuário está ativo"");
             } else {
-                print(""z é menor ou igual a 30"");
+                print(""Usuário inativo"");
             }
 
-            var count: int = 0;
-            while (count < 3) {
-                print(count);
-                count = count + 1;
+            var contador: int = 0;
+            while (contador < 3) {
+                print(""Contador:"");
+                print(contador);
+                contador = contador + 1;
             }
+
+            func soma(a: int, b: int): int {
+                return a + b;
+            }
+
+            var resultado: int = soma(10, 20);
+            print(""Resultado da soma:"");
+            print(resultado);
         ";
 
         var lexer = new Lexer(sourceCode);

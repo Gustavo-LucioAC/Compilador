@@ -14,7 +14,7 @@ public class Parser
     }
 
     private Token Current => _position < _tokens.Count ? _tokens[_position] : _tokens[^1];
-    
+
     private Token Advance()
     {
         if (_position < _tokens.Count)
@@ -72,6 +72,8 @@ public class Parser
             TokenType.Input => ParseInput(),
             TokenType.If => ParseIf(),
             TokenType.While => ParseWhile(),
+            TokenType.Func => ParseFunction(),
+            TokenType.Return => ParseReturn(),
             TokenType.Identifier when Peek().Type == TokenType.Assign => ParseAssignment(),
             _ => throw new Exception($"Comando inesperado na linha {Current.Line}: '{Current.Value}'")
         };
@@ -140,6 +142,50 @@ public class Parser
             Condition = condition,
             ThenBlock = thenBlock,
             ElseBlock = elseBlock
+        };
+    }
+
+    private FunctionNode ParseFunction()
+    {
+        Expect(TokenType.Func, "Esperado 'func'");
+        var name = Expect(TokenType.Identifier, "Esperado nome da função").Value;
+
+        Expect(TokenType.LeftParen, "Esperado '(' após nome da função");
+        var parameters = new List<(string Name, string Type)>();
+
+        if (Current.Type != TokenType.RightParen)
+        {
+            do
+            {
+                var paramName = Expect(TokenType.Identifier, "Esperado nome do parâmetro").Value;
+                Expect(TokenType.Colon, "Esperado ':' após nome do parâmetro");
+
+                var paramTypeToken = MatchToken(TokenType.Int, TokenType.FloatType, TokenType.CharType, TokenType.BoolType, TokenType.StringType);
+                if (paramTypeToken == null)
+                    throw new Exception("Esperado tipo do parâmetro");
+
+                parameters.Add((paramName, paramTypeToken.Value));
+            } while (Match(TokenType.Comma));
+        }
+
+        Expect(TokenType.RightParen, "Esperado ')' após parâmetros");
+
+        Expect(TokenType.Colon, "Esperado ':' antes do tipo de retorno");
+
+        var returnTypeToken = MatchToken(TokenType.Int, TokenType.FloatType, TokenType.CharType, TokenType.BoolType, TokenType.StringType);
+        if (returnTypeToken == null)
+            throw new Exception("Esperado tipo de retorno da função");
+
+        var returnType = returnTypeToken.Value;
+
+        var body = ParseBlock();
+
+        return new FunctionNode
+        {
+            Name = name,
+            Parameters = parameters,
+            ReturnType = returnType,
+            Body = body
         };
     }
 
@@ -253,17 +299,36 @@ public class Parser
     {
         var token = Advance();
 
-        return token.Type switch
+        switch (token.Type)
         {
-            TokenType.Number => new LiteralNode { Value = int.Parse(token.Value, CultureInfo.InvariantCulture) },
-            TokenType.Float => new LiteralNode { Value = double.Parse(token.Value, CultureInfo.InvariantCulture) },
-            TokenType.Char => new LiteralNode { Value = token.Value[0] },
-            TokenType.String => new LiteralNode { Value = token.Value },
-            TokenType.Boolean => new LiteralNode { Value = token.Value == "true" },
-            TokenType.Identifier => new IdentifierNode { Name = token.Value },
-            TokenType.LeftParen => ParseGrouped(),
-            _ => throw new Exception($"Expressão inválida na linha {token.Line}")
-        };
+            case TokenType.Number:
+                return new LiteralNode { Value = int.Parse(token.Value, CultureInfo.InvariantCulture) };
+
+            case TokenType.Float:
+                return new LiteralNode { Value = double.Parse(token.Value, CultureInfo.InvariantCulture) };
+
+            case TokenType.Char:
+                return new LiteralNode { Value = token.Value[0] };
+
+            case TokenType.String:
+                return new LiteralNode { Value = token.Value };
+
+            case TokenType.Boolean:
+                return new LiteralNode { Value = token.Value == "true" };
+
+            case TokenType.Identifier:
+                if (Current.Type == TokenType.LeftParen) // 👈 isso resolve seu erro
+                    return ParseFunctionCall(token.Value);
+                return new IdentifierNode { Name = token.Value };
+
+            case TokenType.LeftParen:
+                var expr = ParseExpression();
+                Expect(TokenType.RightParen, "Esperado ')' após expressão");
+                return expr;
+
+            default:
+                throw new Exception($"Expressão inválida na linha {token.Line}");
+        }
     }
 
     private ExpressionNode ParseGrouped()
@@ -275,4 +340,30 @@ public class Parser
 
     private Token Peek() =>
         _position + 1 < _tokens.Count ? _tokens[_position + 1] : _tokens[^1];
+
+    private FunctionCallNode ParseFunctionCall(string name)
+    {
+        Expect(TokenType.LeftParen, "Esperado '(' após nome da função");
+        var args = new List<ExpressionNode>();
+
+        if (Current.Type != TokenType.RightParen)
+        {
+            do
+            {
+                args.Add(ParseExpression());
+            } while (Match(TokenType.Comma));
+        }
+
+        Expect(TokenType.RightParen, "Esperado ')' após argumentos da função");
+
+        return new FunctionCallNode { FunctionName = name, Arguments = args };
+    }
+    
+    private ReturnNode ParseReturn()
+    {
+        Expect(TokenType.Return, "Esperado 'return'");
+        var expr = ParseExpression();
+        Expect(TokenType.Semicolon, "Esperado ';' após return");
+        return new ReturnNode { Value = expr };
+    }
 }

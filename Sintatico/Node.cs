@@ -92,4 +92,13 @@ namespace Compilador.Sintatico
         public required string FunctionName { get; set; }
         public required List<ExpressionNode> Arguments { get; set; }
     }
+    public class FunctionSymbol : Symbol
+    {
+        public List<string> ParamTypes { get; }
+        public FunctionSymbol(string name, string returnType, List<string> paramTypes)
+            : base(name, returnType)
+        {
+            ParamTypes = paramTypes;
+        }
+    }
 }

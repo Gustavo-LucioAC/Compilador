@@ -1,4 +1,4 @@
-using Compilador.Sintatico; 
+using Compilador.Sintatico;
 
 public class SemanticAnalyzer
 {
@@ -21,6 +21,13 @@ public class SemanticAnalyzer
                 break;
             case AssignmentNode assign:
                 AnalyzeAssignment(assign);
+                break;
+            case FunctionNode funcDecl:
+                AnalyzeFunctionDeclaration(funcDecl);
+                break;
+            case ReturnNode ret:
+                var returnType = AnalyzeExpression(ret.Value);
+                // Opcional: você pode validar se esse tipo bate com o tipo de retorno da função atual
                 break;
             case PrintNode print:
                 AnalyzeExpression(print.Expression);
@@ -54,6 +61,29 @@ public class SemanticAnalyzer
             default:
                 throw new Exception("Tipo de comando não suportado no analisador semântico.");
         }
+    }
+
+    private void AnalyzeFunctionDeclaration(FunctionNode funcDecl)
+    {
+        // Registra a função no escopo atual
+        if (!_currentScope.Define(new Symbol(funcDecl.Name, funcDecl.ReturnType)))
+            throw new Exception($"Erro semântico: função '{funcDecl.Name}' já declarada.");
+
+        EnterScope();
+
+        // Registra parâmetros como variáveis no escopo da função
+        foreach (var (paramName, paramType) in funcDecl.Parameters)
+        {
+            if (!_currentScope.Define(new Symbol(paramName, paramType)))
+                throw new Exception($"Erro semântico: parâmetro '{paramName}' duplicado na função '{funcDecl.Name}'.");
+        }
+
+        foreach (var stmt in funcDecl.Body)
+        {
+            AnalyzeStatement(stmt);
+        }
+
+        ExitScope();
     }
 
     private void AnalyzeVariableDeclaration(VariableDeclarationNode varDecl)
@@ -99,6 +129,13 @@ public class SemanticAnalyzer
                     throw new Exception($"Erro semântico: tipos incompatíveis no operador '{bin.Operator}'.");
 
                 return leftType;
+            case FunctionCallNode call:
+                var funcSymbol = _currentScope.Resolve(call.FunctionName);
+                if (funcSymbol == null)
+                    throw new Exception($"Erro semântico: função '{call.FunctionName}' não declarada.");
+
+                // TODO: validar número de argumentos e tipos aqui
+                return funcSymbol.Type;
             default:
                 throw new Exception("Expressão não suportada no analisador semântico.");
         }
@@ -137,7 +174,7 @@ public class SemanticAnalyzer
     {
         if (_currentScope.Parent == null)
             throw new Exception("Não existe escopo pai para sair.");
-        
+
         _currentScope = _currentScope.Parent;
     }
 }
