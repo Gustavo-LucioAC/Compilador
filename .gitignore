@@ -1,15 +1,24 @@
 # Build
 bin/
 obj/
+out/
+build/
+dist/
 
 # Usuário e IDE
 .vscode/
 .vs/
 *.user
 *.suo
+*.userosscache
+*.sln.docstates
 
 # Logs
 *.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Outros
 *.pdb
@@ -17,9 +26,41 @@ obj/
 *.dbmdl
 *.bak
 *.tmp
+*.swp
+*.swn
+*.swo
+*.DS_Store
+Thumbs.db
 
 # Node (caso tenha frontend)
 node_modules/
+npm-debug.log
+yarn-error.log
 
 # Resultados de testes
 TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# Pacotes
+*.nupkg
+*.snupkg
+packages/
+*.tgz
+
+# Configurações locais
+*.local.json
+appsettings.Development.json
+
+# Arquivos de publish
+publish/
+wwwroot/
+
+# Arquivos de backup do Visual Studio
+*.orig
+_ReSharper*/
+*.resharper
+.idea/
+*.sublime-workspace
+*.sublime-project

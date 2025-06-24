@@ -11,6 +11,19 @@
         else
         {
             sourceCode = @"
+                print(""Olá, mundo!"");
+                var x: int = 3;
+                while (x > 0) {
+                    print(x);
+                    x = x - 1;
+                }
+
+                func dobro(n: int): int {
+                    return n * 2;
+                }
+
+                print(dobro(x));
+
                 print(""Digite um número inteiro:"");
                 var inteiro: int;
                 input(inteiro);
