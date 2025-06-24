@@ -27,7 +27,6 @@ public class SemanticAnalyzer
                 break;
             case ReturnNode ret:
                 var returnType = AnalyzeExpression(ret.Value);
-                // Opcional: você pode validar se esse tipo bate com o tipo de retorno da função atual
                 break;
             case PrintNode print:
                 AnalyzeExpression(print.Expression);
@@ -58,6 +57,17 @@ public class SemanticAnalyzer
                     AnalyzeStatement(s);
                 ExitScope();
                 break;
+            case ForNode forNode:
+                EnterScope();
+                AnalyzeStatement(forNode.Initialization);
+                var condType = AnalyzeExpression(forNode.Condition);
+                if (condType != "bool")
+                    throw new Exception("Erro semântico: condição do for deve ser booleana.");
+                AnalyzeStatement(forNode.Increment);
+                foreach (var bodyStmt in forNode.Body)
+                    AnalyzeStatement(bodyStmt);
+                ExitScope();
+                break;
             default:
                 throw new Exception("Tipo de comando não suportado no analisador semântico.");
         }
@@ -65,13 +75,12 @@ public class SemanticAnalyzer
 
     private void AnalyzeFunctionDeclaration(FunctionNode funcDecl)
     {
-        // Registra a função no escopo atual
+
         if (!_currentScope.Define(new Symbol(funcDecl.Name, funcDecl.ReturnType)))
             throw new Exception($"Erro semântico: função '{funcDecl.Name}' já declarada.");
 
         EnterScope();
 
-        // Registra parâmetros como variáveis no escopo da função
         foreach (var (paramName, paramType) in funcDecl.Parameters)
         {
             if (!_currentScope.Define(new Symbol(paramName, paramType)))
@@ -116,11 +125,13 @@ public class SemanticAnalyzer
         {
             case LiteralNode lit:
                 return GetLiteralType(lit.Value);
+
             case IdentifierNode id:
                 var symbol = _currentScope.Resolve(id.Name);
                 if (symbol == null)
                     throw new Exception($"Erro semântico: variável '{id.Name}' não declarada.");
                 return symbol.Type;
+
             case BinaryExpressionNode bin:
                 var leftType = AnalyzeExpression(bin.Left);
                 var rightType = AnalyzeExpression(bin.Right);
@@ -128,14 +139,18 @@ public class SemanticAnalyzer
                 if (!IsTypeCompatible(leftType, rightType))
                     throw new Exception($"Erro semântico: tipos incompatíveis no operador '{bin.Operator}'.");
 
+
+                if (new[] { "==", "!=", "<", "<=", ">", ">=" }.Contains(bin.Operator))
+                    return "bool";
+
                 return leftType;
+
             case FunctionCallNode call:
                 var funcSymbol = _currentScope.Resolve(call.FunctionName);
                 if (funcSymbol == null)
                     throw new Exception($"Erro semântico: função '{call.FunctionName}' não declarada.");
-
-                // TODO: validar número de argumentos e tipos aqui
                 return funcSymbol.Type;
+
             default:
                 throw new Exception("Expressão não suportada no analisador semântico.");
         }

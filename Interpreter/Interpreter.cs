@@ -57,6 +57,14 @@ public class Interpreter
                     ExecuteBlock(whileNode.Body);
                 }
                 break;
+            case ForNode forNode:
+                ExecuteStatement(forNode.Initialization);
+                while (IsTruthy(EvaluateExpression(forNode.Condition)))
+                {
+                    ExecuteBlock(forNode.Body);
+                    ExecuteStatement(forNode.Increment);
+                }
+                break;
             default:
                 throw new Exception("Comando não suportado no interpretador.");
         }
@@ -101,7 +109,7 @@ public class Interpreter
             case BinaryExpressionNode bin:
                 var left = EvaluateExpression(bin.Left);
                 var right = EvaluateExpression(bin.Right);
-                return EvaluateBinaryOperation(bin.Operator, left, right);
+                return EvaluateBinaryOperation(bin.Operator, left, right); // ✅ Aqui executa a operação
             case FunctionCallNode call:
                 if (!_functions.TryGetValue(call.FunctionName, out var func))
                     throw new Exception($"Função '{call.FunctionName}' não declarada.");
@@ -152,13 +160,14 @@ public class Interpreter
 
         return op switch
         {
+            "+" when left is int && right is int => (int)left + (int)right,
             "+" when leftIsNumber && rightIsNumber => leftNum + rightNum,
             "+" => left.ToString() + right.ToString(),
-            "-" when leftIsNumber && rightIsNumber => leftNum - rightNum,
-            "*" when leftIsNumber && rightIsNumber => leftNum * rightNum,
-            "/" when leftIsNumber && rightIsNumber => rightNum == 0
-                ? throw new Exception("Divisão por zero.")
-                : leftNum / rightNum,
+            "-" when left is int && right is int => (int)left - (int)right,
+            "*" when left is int && right is int => (int)left * (int)right,
+            "/" when left is int && right is int => 
+                (int)right == 0 ? throw new Exception("Divisão por zero.") : (int)left / (int)right,
+            "%" when left is int && right is int => (int)left % (int)right,
             "%" when leftIsNumber && rightIsNumber => leftNum % rightNum,
             "==" => Equals(left, right),
             "!=" => !Equals(left, right),
@@ -212,5 +221,20 @@ public class Interpreter
         {
             throw new Exception($"Entrada inválida para o tipo {targetType.Name}: '{input}'");
         }
+    }
+
+    private bool IsTypeCompatible(object left, object right)
+    {
+        if (left == null || right == null) return false;
+
+        var leftType = left.GetType();
+        var rightType = right.GetType();
+
+        // Permitir comparação entre int e double
+        if ((leftType == typeof(int) && rightType == typeof(double)) ||
+            (leftType == typeof(double) && rightType == typeof(int)))
+            return true;
+
+        return leftType == rightType;
     }
 }

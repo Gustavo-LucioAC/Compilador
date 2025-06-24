@@ -1,49 +1,62 @@
 ﻿class Program
 {
-    static void Main()
+    static void Main(string[] args)
     {
-        string sourceCode = @"
-            var x: int = 5;
-            var y: float = 3.2;
-            var nome: string = ""João"";
-            var ativo: bool = false;
+        string sourceCode;
 
-            print(""Nome:"");
-            print(nome);
+        if (args.Length > 0 && File.Exists(args[0]))
+        {
+            sourceCode = File.ReadAllText(args[0]);
+        }
+        else
+        {
+            sourceCode = @"
+                print(""Digite um número inteiro:"");
+                var inteiro: int;
+                input(inteiro);
 
-            if (ativo) {
-                print(""Usuário está ativo"");
-            } else {
-                print(""Usuário inativo"");
-            }
+                print(""Digite um número real:"");
+                var real: float;
+                input(real);
 
-            var contador: int = 0;
-            while (contador < 3) {
-                print(""Contador:"");
-                print(contador);
-                contador = contador + 1;
-            }
+                func somar(a: float, b: float): float {
+                    var resultado: float = a + b;
+                    return resultado;
+                }
 
-            func soma(a: int, b: int): int {
-                return a + b;
-            }
+                var soma: float = somar(inteiro, real);
+                print(""Resultado da soma:"");
+                print(soma);
 
-            var resultado: int = soma(10, 20);
-            print(""Resultado da soma:"");
-            print(resultado);
-        ";
+                var texto: string = ""Soma = "";
+                print(texto);
+                print(soma);
+
+                print(""Contagem regressiva com while:"");
+                var count: int = 5;
+                while (count > 0) {
+                    print(count);
+                    count = count - 1;
+                }
+
+                print(""Multiplicação com for:"");
+                for (var i: int = 1; i <= 5; i = i + 1;) {
+                    print(i * 2);
+                }
+                ";
+        }
 
         var lexer = new Lexer(sourceCode);
         var tokens = lexer.Tokenize();
+        foreach (var t in tokens)
+            Console.WriteLine($"[{t.Line},{t.Column}] {t.Type,-12} '{t.Value}'");
 
         var parser = new Parser(tokens);
         var program = parser.ParseProgram();
 
-        // Análise semântica
         var semanticAnalyzer = new SemanticAnalyzer();
         semanticAnalyzer.Analyze(program);
 
-        // Interpretar
         var interpreter = new Interpreter();
         interpreter.Interpret(program);
     }

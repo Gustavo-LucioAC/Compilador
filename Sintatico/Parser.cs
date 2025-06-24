@@ -74,6 +74,7 @@ public class Parser
             TokenType.While => ParseWhile(),
             TokenType.Func => ParseFunction(),
             TokenType.Return => ParseReturn(),
+            TokenType.For => ParseFor(),
             TokenType.Identifier when Peek().Type == TokenType.Assign => ParseAssignment(),
             _ => throw new Exception($"Comando inesperado na linha {Current.Line}: '{Current.Value}'")
         };
@@ -100,6 +101,64 @@ public class Parser
         Expect(TokenType.Semicolon, "Esperado ';' após declaração");
 
         return new VariableDeclarationNode { Name = name, Type = type, Initializer = initializer };
+    }
+
+    private ForNode ParseFor()
+    {
+        Expect(TokenType.For, "Esperado 'for'");
+        Expect(TokenType.LeftParen, "Esperado '(' após 'for'");
+
+        // Parse da inicialização (var ou atribuição) e consome o ';'
+        StatementNode initialization = ParseForInitializer();
+
+        // Parse da condição, termina antes do ';'
+        ExpressionNode condition = ParseExpression();
+        Expect(TokenType.Semicolon, "Esperado ';' após condição");
+
+        // Parse do incremento (uma atribuição), consome o ';'
+        StatementNode increment = ParseForIncrement();
+
+        Expect(TokenType.RightParen, "Esperado ')' após incremento");
+
+        var body = ParseBlock();
+
+        return new ForNode
+        {
+            Initialization = initialization,
+            Condition = condition,
+            Increment = increment,
+            Body = body
+        };
+    }
+
+    private StatementNode ParseForInitializer()
+    {
+        if (Match(TokenType.Var))
+        {
+            // Volta um token para permitir ParseVariableDeclaration consumir o 'var'
+            _position--;
+            return ParseVariableDeclaration();
+        }
+        else if (Current.Type == TokenType.Identifier && Peek().Type == TokenType.Assign)
+        {
+            return ParseAssignment();
+        }
+        else
+        {
+            throw new Exception($"Inicializador do for inválido na linha {Current.Line}");
+        }
+    }
+
+    private StatementNode ParseForIncrement()
+    {
+        if (Current.Type == TokenType.Identifier && Peek().Type == TokenType.Assign)
+        {
+            return ParseAssignment();
+        }
+        else
+        {
+            throw new Exception($"Incremento do for inválido na linha {Current.Line}");
+        }
     }
 
     private PrintNode ParsePrint()
@@ -245,9 +304,43 @@ public class Parser
     {
         var expr = ParseTerm();
 
-        while (Match(TokenType.LessThan, TokenType.LessOrEqual, TokenType.GreaterThan, TokenType.GreaterOrEqual))
+        while (true)
         {
-            string op = _tokens[_position - 1].Value;
+            string? op = null;
+
+            if (Current.Type == TokenType.LessOrEqual)
+            {
+                op = Advance().Value;
+            }
+
+            else if (Current.Type == TokenType.LessThan && Peek().Type == TokenType.Assign)
+            {
+                Advance();
+                Advance();
+                op = "<=";
+            }
+
+            else if (Current.Type == TokenType.GreaterOrEqual)
+            {
+                op = Advance().Value;
+            }
+
+            else if (Current.Type == TokenType.GreaterThan && Peek().Type == TokenType.Assign)
+            {
+                Advance(); 
+                Advance(); 
+                op = ">=";
+            }
+
+            else if (Match(TokenType.LessThan, TokenType.GreaterThan))
+            {
+                op = _tokens[_position - 1].Value;
+            }
+            else
+            {
+                break;
+            }
+
             var right = ParseTerm();
             expr = new BinaryExpressionNode { Left = expr, Operator = op, Right = right };
         }
@@ -358,7 +451,7 @@ public class Parser
 
         return new FunctionCallNode { FunctionName = name, Arguments = args };
     }
-    
+
     private ReturnNode ParseReturn()
     {
         Expect(TokenType.Return, "Esperado 'return'");
